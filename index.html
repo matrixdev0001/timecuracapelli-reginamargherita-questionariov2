@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feedback – Time Cura Capelli Regina Margherita</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: #f8fafc;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 540px;
+    animation: fadeInUp 1s ease;
+  }
+  @keyframes fadeInUp {
+    from {opacity:0; transform: translateY(30px);}
+    to {opacity:1; transform: translateY(0);}
+  }
+  .logo {display:block;margin:0 auto 1.5rem;max-width:140px;height:auto;background:transparent;border-radius:8px;padding:10px;}
+  h1 {text-align:center;color:#735354;font-weight:600;margin-bottom:0.5rem;}
+  p.intro {text-align:center;color:#555;font-size:0.95rem;margin-bottom:2rem;}
+  label {display:block;margin-top:1.4rem;font-weight:500;color:#735354;}
+  .rating {display:flex;flex-direction:row-reverse;justify-content:center;gap:4px;margin-top:0.5rem;}
+  .rating input {display:none;}
+  .rating label {font-size:2rem;color:#ccc;cursor:pointer;transition:transform 0.2s ease,color 0.3s ease,text-shadow 0.3s;}
+  .rating label:hover,.rating label:hover~label {color:#d4a800;transform:scale(1.2);text-shadow:0 0 8px rgba(212,168,0,0.4);}
+  .rating input:checked~label {color:#b98f00;text-shadow:0 0 10px rgba(212,168,0,0.3);}
+  textarea {width:100%;margin-top:0.6rem;border:1px solid #ddd;border-radius:10px;padding:0.8rem;font-size:1rem;resize:vertical;min-height:100px;transition:border-color 0.3s;}
+  textarea:focus {border-color:#00334e;outline:none;}
+  button {display:block;width:100%;margin-top:2rem;background:#735354;color:white;font-size:1.1rem;padding:0.9rem;border:none;border-radius:10px;cursor:pointer;transition:transform 0.2s ease,box-shadow 0.3s ease;}
+  button:disabled {opacity:0.5;cursor:not-allowed;}
+  button:hover:not(:disabled) {transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,83,118,0.4);}
+  #msg {text-align:center;margin-top:1rem;font-weight:600;color:#00334e;opacity:0;transition:opacity 0.5s;}
+  #msg.visible {opacity:1;}
+  footer,.small-muted {text-align:center;font-size:0.85rem;color:#999;margin-top:2rem;}
+  @media (max-width:600px){.rating label{font-size:1.6rem;}}
+  .debug-btn {display:block;width:100%;margin-top:12px;background:#eee;color:#333;border-radius:8px;padding:8px;border:1px solid #ddd;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img src="logo_time.svg" alt="Logo Time Cura Capelli" class="logo">
+  <h1>Grazie per la tua opinione!</h1>
+  <p class="intro">Compila il questionario in forma anonima: ci aiuti a migliorare ogni giorno nel nostro salone.</p>
+
+  <form id="survey" autocomplete="off" novalidate>
+    <label>1) Che voto daresti da 1 a 10 alla tua esperienza da Time Cura Capelli?</label>
+    <div class="rating">
+      <input type="radio" name="voto" id="acc10" value="10"><label for="acc10">★</label>
+      <input type="radio" name="voto" id="acc9" value="9"><label for="acc9">★</label>
+      <input type="radio" name="voto" id="acc8" value="8"><label for="acc8">★</label>
+      <input type="radio" name="voto" id="acc7" value="7"><label for="acc7">★</label>
+      <input type="radio" name="voto" id="acc6" value="6"><label for="acc6">★</label>
+      <input type="radio" name="voto" id="acc5" value="5"><label for="acc5">★</label>
+      <input type="radio" name="voto" id="acc4" value="4"><label for="acc4">★</label>
+      <input type="radio" name="voto" id="acc3" value="3"><label for="acc3">★</label>
+      <input type="radio" name="voto" id="acc2" value="2"><label for="acc2">★</label>
+      <input type="radio" name="voto" id="acc1" value="1"><label for="acc1">★</label>
+    </div>
+
+    <label>2) Cosa ti è piaciuto?</label>
+    <textarea name="piaciuto"></textarea>
+
+    <label>3) Cosa non ti è piaciuto?</label>
+    <textarea name="non_piaciuto"></textarea>
+
+    <label>4) Cosa ti piacerebbe trovare dal tuo parrucchiere?</label>
+    <textarea name="cosa_ti_piacerebbe_trovare"></textarea>
+
+    <label>5) Ci consiglieresti a un amico?</label>
+    <label style="display:inline-block;margin-right:10px;"><input type="radio" name="consiglio_ad_amico" value="si"> Si</label>
+    <label style="display:inline-block;"><input type="radio" name="consiglio_ad_amico" value="no"> No</label>
+
+    <button type="submit" id="submitBtn" disabled>Invia il mio feedback</button>
+  </form>
+
+  <div id="msg"></div>
+  <div class="small-muted">© Time Cura Capelli – Roma, Viale Regina Margherita, 308</div>
+</div>
+
+<script>
+(function(){
+  const DEBUG = false; // Imposta true se vuoi attivare il pulsante reset di test
+  const endpoint = "https://questionario-timecuracapellimargherita.spring-base-cc9f.workers.dev";
+  const card = document.querySelector('.card');
+
+  function safeSetItem(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function safeGetItem(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeRemoveItem(k){try{localStorage.removeItem(k)}catch(e){}}
+
+  function alreadySubmittedRecently(){
+    const last = safeGetItem('time_feedback_date');
+    if(!last) return false;
+    const lastDate = new Date(last);
+    if(isNaN(lastDate)) return false;
+    const diff = (Date.now()-lastDate)/86400000;
+    return diff<7;
+  }
+
+  function daysUntilNextAllowed(){
+    const last = safeGetItem('time_feedback_date');
+    if(!last) return 0;
+    const lastDate = new Date(last);
+    const remaining = (lastDate.getTime()+7*86400000)-Date.now();
+    return Math.max(0,Math.ceil(remaining/86400000));
+  }
+
+  if(alreadySubmittedRecently()){
+    const daysLeft = daysUntilNextAllowed();
+    const dayWord = daysLeft === 1 ? 'giorno' : 'giorni';
+    const waitText = daysLeft > 0
+    ? `Potrai compilarlo nuovamente tra ${daysLeft} ${dayWord}.<br><br>`
+    : '';
+
+    card.innerHTML = `
+      <img src="logo_time.svg" alt="Logo Time Cura Capelli" class="logo">
+      <h1>Grazie per il tuo feedback 💖</h1>
+      <p class="intro">Hai già compilato il questionario di soddisfazione nell’ultima settimana.<br>
+      Ti ringraziamo davvero per il tuo contributo!</p>
+      <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">
+        ${waitText}
+        Speriamo di rivederti presto nel nostro salone ✂️<br><br>
+        <strong>Time Cura Capelli – Regina Margherita</strong>
+      </p>
+      ${DEBUG?'<button id="debug-reset" class="debug-btn">[DEBUG] Reset LocalStorage</button>':''}
+    `;
+    if(DEBUG){
+      document.getElementById('debug-reset').onclick=()=>{safeRemoveItem('time_feedback_date');location.reload()};
+    }
+    return;
+  }
+
+  const form=document.getElementById("survey");
+  const msg=document.getElementById("msg");
+  const submitBtn=document.getElementById("submitBtn");
+  const ratingInputs=document.querySelectorAll('input[type="radio"]');
+  const textAreas=document.querySelectorAll('textarea');
+
+  function checkAllRated(){
+    const groups=[...new Set([...ratingInputs].map(i=>i.name))];
+    const allRated=groups.every(n=>document.querySelector(`input[name="${n}"]:checked`));
+    const allFilled=[...textAreas].every(t=>t.value.trim().length>=5);
+    submitBtn.disabled=!(allRated&&allFilled);
+    msg.textContent= allRated?'':'⚠️ Per favore, vota tutte le categorie prima di inviare.';
+    msg.classList.toggle('visible',!allRated);
+  }
+
+  ratingInputs.forEach(i=>i.addEventListener('change',checkAllRated));
+  textAreas.forEach(t=>t.addEventListener('input',checkAllRated));
+
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    msg.textContent="⏳ Invio in corso...";
+    msg.classList.add('visible');
+    const data=Object.fromEntries(new FormData(form).entries());
+
+    try{
+      const res=await fetch(endpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({answers:data})
+      });
+      if(res.ok){
+        safeSetItem('time_feedback_date',new Date().toISOString());
+        card.innerHTML=`
+          <img src="logo_time.svg" alt="Logo Time Cura Capelli" class="logo">
+          <h1>Grazie per il tuo feedback 💖</h1>
+          <p class="intro">Il tuo questionario è stato inviato con successo.<br>
+          Apprezziamo davvero il tuo contributo per aiutarci a migliorare!</p>
+          <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">
+            Speriamo di rivederti presto nel nostro salone ✂️<br><br>
+            <strong>Time Cura Capelli – Regina Margherita</strong>
+          </p>
+          ${DEBUG?'<button id="debug-reset" class="debug-btn">[DEBUG] Reset LocalStorage</button>':''}
+        `;
+        if(DEBUG){
+          document.getElementById('debug-reset').onclick=()=>{safeRemoveItem('time_feedback_date');location.reload()};
+        }
+      } else {
+        msg.textContent="❌ Errore durante l’invio. Riprova più tardi.";
+      }
+    }catch(err){
+      console.error(err);
+      msg.textContent="⚠️ Connessione non disponibile.";
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    form.reset();
+    submitBtn.disabled=true;
+    msg.textContent='';
+    msg.classList.remove('visible');
+  });
+})();
+</script>
+
+</body>
+</html>
