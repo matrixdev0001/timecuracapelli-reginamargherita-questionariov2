@@ -94,8 +94,10 @@
 
 <script>
 (function(){
-  const DEBUG = false; // Imposta true se vuoi attivare il pulsante reset di test
-  const endpoint = "https://questionario-timecuracapellimargherita.spring-base-cc9f.workers.dev";
+  const DEBUG = false;
+  const TOKEN_ENDPOINT = "https://feedback-token-generator.spring-base-cc9f.workers.dev"; // worker token
+  const FEEDBACK_ENDPOINT = "https://questionario-timecuracapellimargherita.spring-base-cc9f.workers.dev"; // worker feedback
+
   const card = document.querySelector('.card');
 
   function safeSetItem(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -123,19 +125,13 @@
     const daysLeft = daysUntilNextAllowed();
     const dayWord = daysLeft === 1 ? 'giorno' : 'giorni';
     const waitText = daysLeft > 0
-    ? `Potrai compilarlo nuovamente tra ${daysLeft} ${dayWord}.<br><br>`
-    : '';
-
+      ? `Potrai compilarlo nuovamente tra ${daysLeft} ${dayWord}.<br><br>`
+      : '';
     card.innerHTML = `
       <img src="logo_time.svg" alt="Logo Time Cura Capelli" class="logo">
       <h1>Grazie per il tuo feedback 💖</h1>
-      <p class="intro">Hai già compilato il questionario di soddisfazione nell’ultima settimana.<br>
-      Ti ringraziamo davvero per il tuo contributo!</p>
-      <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">
-        ${waitText}
-        Speriamo di rivederti presto nel nostro salone ✂️<br><br>
-        <strong>Time Cura Capelli – Regina Margherita</strong>
-      </p>
+      <p class="intro">Hai già compilato il questionario di soddisfazione nell’ultima settimana.<br>Ti ringraziamo davvero per il tuo contributo!</p>
+      <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">${waitText}Speriamo di rivederti presto nel nostro salone ✂️<br><br><strong>Time Cura Capelli – Regina Margherita</strong></p>
       ${DEBUG?'<button id="debug-reset" class="debug-btn">[DEBUG] Reset LocalStorage</button>':''}
     `;
     if(DEBUG){
@@ -144,58 +140,67 @@
     return;
   }
 
-  const form=document.getElementById("survey");
-  const msg=document.getElementById("msg");
-  const submitBtn=document.getElementById("submitBtn");
-  const ratingInputs=document.querySelectorAll('input[type="radio"]');
-  const textAreas=document.querySelectorAll('textarea');
+  const form = document.getElementById("survey");
+  const msg = document.getElementById("msg");
+  const submitBtn = document.getElementById("submitBtn");
+  const ratingInputs = document.querySelectorAll('input[type="radio"]');
+  const textAreas = document.querySelectorAll('textarea');
 
   function checkAllRated(){
-    const groups=[...new Set([...ratingInputs].map(i=>i.name))];
-    const allRated=groups.every(n=>document.querySelector(`input[name="${n}"]:checked`));
-    const allFilled=[...textAreas].every(t=>t.value.trim().length>=5);
-    submitBtn.disabled=!(allRated&&allFilled);
-    msg.textContent= allRated?'':'⚠️ Per favore, vota tutte le categorie prima di inviare.';
-    msg.classList.toggle('visible',!allRated);
+    const groups = [...new Set([...ratingInputs].map(i=>i.name))];
+    const allRated = groups.every(n=>document.querySelector(`input[name="${n}"]:checked`));
+    const allFilled = [...textAreas].every(t=>t.value.trim().length>=5);
+    submitBtn.disabled = !(allRated && allFilled);
+    msg.textContent = allRated?'':'⚠️ Per favore, vota tutte le categorie prima di inviare.';
+    msg.classList.toggle('visible', !allRated);
   }
 
-  ratingInputs.forEach(i=>i.addEventListener('change',checkAllRated));
-  textAreas.forEach(t=>t.addEventListener('input',checkAllRated));
+  ratingInputs.forEach(i=>i.addEventListener('change', checkAllRated));
+  textAreas.forEach(t=>t.addEventListener('input', checkAllRated));
 
-  form.addEventListener('submit',async e=>{
+  async function fetchToken() {
+    const res = await fetch(TOKEN_ENDPOINT, {
+      method: 'GET',
+      headers: { 'Origin': window.location.origin }
+    });
+    if(!res.ok) throw new Error('Errore generazione token');
+    return res.json(); // { token, timestamp }
+  }
+
+  form.addEventListener('submit', async e => {
     e.preventDefault();
-    msg.textContent="⏳ Invio in corso...";
+    msg.textContent = "⏳ Invio in corso...";
     msg.classList.add('visible');
-    const data=Object.fromEntries(new FormData(form).entries());
+
+    const data = Object.fromEntries(new FormData(form).entries());
 
     try{
-      const res=await fetch(endpoint,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({answers:data})
+      const { token, timestamp } = await fetchToken();
+
+      const res = await fetch(FEEDBACK_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+        body: JSON.stringify({ token, timestamp, answers: data })
       });
+
       if(res.ok){
-        safeSetItem('time_feedback_date',new Date().toISOString());
-        card.innerHTML=`
+        safeSetItem('time_feedback_date', new Date().toISOString());
+        card.innerHTML = `
           <img src="logo_time.svg" alt="Logo Time Cura Capelli" class="logo">
           <h1>Grazie per il tuo feedback 💖</h1>
-          <p class="intro">Il tuo questionario è stato inviato con successo.<br>
-          Apprezziamo davvero il tuo contributo per aiutarci a migliorare!</p>
-          <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">
-            Speriamo di rivederti presto nel nostro salone ✂️<br><br>
-            <strong>Time Cura Capelli – Regina Margherita</strong>
-          </p>
+          <p class="intro">Il tuo questionario è stato inviato con successo.<br>Apprezziamo davvero il tuo contributo per aiutarci a migliorare!</p>
+          <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">Speriamo di rivederti presto nel nostro salone ✂️<br><br><strong>Time Cura Capelli – Regina Margherita</strong></p>
           ${DEBUG?'<button id="debug-reset" class="debug-btn">[DEBUG] Reset LocalStorage</button>':''}
         `;
         if(DEBUG){
           document.getElementById('debug-reset').onclick=()=>{safeRemoveItem('time_feedback_date');location.reload()};
         }
       } else {
-        msg.textContent="❌ Errore durante l’invio. Riprova più tardi.";
+        msg.textContent = "❌ Errore durante l’invio. Riprova più tardi.";
       }
     }catch(err){
       console.error(err);
-      msg.textContent="⚠️ Connessione non disponibile.";
+      msg.textContent = "⚠️ Connessione non disponibile.";
     }
   });
 
@@ -205,8 +210,10 @@
     msg.textContent='';
     msg.classList.remove('visible');
   });
+
 })();
 </script>
+
 
 </body>
 </html>
