@@ -187,9 +187,36 @@
         safeSetItem('time_feedback_date', new Date().toISOString());
         card.innerHTML = `
           <img src="logo_time.svg" alt="Logo Time Cura Capelli" class="logo">
+          
           <h1>Grazie per il tuo feedback 💖</h1>
           <p class="intro">Il tuo questionario è stato inviato con successo.<br>Apprezziamo davvero il tuo contributo per aiutarci a migliorare!</p>
           <p style="text-align:center;color:#735354;font-weight:500;margin-top:1.5rem;">Speriamo di rivederti presto nel nostro salone ✂️<br><br><strong>Time Cura Capelli – Regina Margherita</strong></p>
+          <div style="margin: 2rem auto; max-width: 280px;">
+  <p style="color:#735354; font-weight:600; margin-bottom:1rem; font-size:0.95rem;">
+    Contattaci o seguici!
+  </p>
+  <div style="display:flex; justify-content:space-around; gap:18px;">
+    <!-- WhatsApp -->
+    <a href="https://wa.me/tuonumero" target="_blank" aria-label="WhatsApp">
+      <img src="images/whatsapp_logo.svg" alt="WhatsApp" width="32" height="32" style="display:block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    </a>
+
+    <!-- Telegram -->
+    <a href="https://t.me/tuocanale" target="_blank" aria-label="Telegram">
+      <img src="images/telegram_logo.svg" alt="Telegram" width="32" height="32" style="display:block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    </a>
+
+    <!-- Instagram -->
+    <a href="https://instagram.com/tuoaccount" target="_blank" aria-label="Instagram">
+      <img src="images/instagram_logo.svg" alt="Instagram" width="32" height="32" style="display:block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    </a>
+    <a href="https://facebook.com/tuoaccount" target="_blank" aria-label="Facebook">
+      <img src="images/facebook_logo.svg" alt="Instagram" width="32" height="32" style="display:block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    </a>
+
+  </div>
+</div>
+  </div>
           ${DEBUG?'<button id="debug-reset" class="debug-btn">[DEBUG] Reset LocalStorage</button>':''}
         `;
         if(DEBUG){
